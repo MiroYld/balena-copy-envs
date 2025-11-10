@@ -31,9 +31,11 @@ while IFS= read -r env; do
     name="none"
   fi
   echo "Copying variable $name to fleet $2 and service $servicename in progress..."    
-  # Escape special characters in value
-  value_escaped=$(printf '%s\n' "$value" | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/"/\\"/g')
-
+  
+  # Quote the value to handle spaces, but don't escape special characters
+  # This preserves URLs while handling spaces in values
+  value_escaped=$(printf '%s\n' "$value" | sed -e 's/"/\\"/g')
+  
   # Add variable to destination fleet using retrieved values
   balena env add "$name" "$value_escaped" --fleet "$2" --service "$servicename"
 done < <(jq -c '.[]' envs.json)
