@@ -13,10 +13,12 @@ if ! [ -x "$(command -v balena)" ]; then
 fi
 
 # Get environment variables from the source fleet and store them in a JSON file
-balena envs --fleet $1 --json > envs.json
+balena env list --fleet $1 --json > envs.json
 
 # Add each environment variable to the destination fleet
-for env in $(jq -c '.[]' envs.json); do
+# Read one compact JSON object per line so values with spaces are preserved
+while IFS= read -r env; do
+# for env in $(jq -c '.[]' envs.json); do
   name=$(echo "$env" | jq -r '.name')
   value=$(echo "$env" | jq -r '.value')
   servicename=$(echo "$env" | jq -r '.serviceName')
@@ -34,6 +36,6 @@ for env in $(jq -c '.[]' envs.json); do
 
   # Add variable to destination fleet using retrieved values
   balena env add "$name" "$value_escaped" --fleet "$2" --service "$servicename"
-done
+done < <(jq -c '.[]' envs.json)
 
 echo "Environment variables successfully copied from fleet $1 to fleet $2."
